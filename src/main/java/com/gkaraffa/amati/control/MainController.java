@@ -16,8 +16,8 @@ import com.gkaraffa.cremona.theoretical.scale.Scale;
 import com.gkaraffa.guarneri.analysis.IntervalAnalytic;
 import com.gkaraffa.guarneri.analysis.RomanNumeralAnalytic;
 import com.gkaraffa.guarneri.analysis.ScalarAnalytic;
-import com.gkaraffa.guarneri.analysis.TabularAnalytic;
-import com.gkaraffa.guarneri.view.AnalyticView;
+import com.gkaraffa.guarneri.analysis.Analytic;
+import com.gkaraffa.guarneri.view.View;
 import com.gkaraffa.guarneri.view.AnalyticViewFactory;
 import com.gkaraffa.guarneri.view.CSVAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.TextAnalyticViewFactory;
@@ -48,25 +48,25 @@ public class MainController {
 
   public void run() {
     Scale scaleRendered = this.parseAndRenderScale();
-    List<TabularAnalytic> analyticsRendered = this.parseAndRenderAnalytics(scaleRendered);
+    List<Analytic> analyticsRendered = this.parseAndRenderAnalytics(scaleRendered);
     AnalyticViewFactory viewFactory = this.selectCreateViewFactory(formatRequest);
-    List<AnalyticView> views = this.renderViews(analyticsRendered, viewFactory);
+    List<View> views = this.renderViews(analyticsRendered, viewFactory);
 
     this.createOutput(views);
   }
 
-  private void writeOutputToStdOut(List<AnalyticView> views) {
-    for (AnalyticView view : views) {
+  private void writeOutputToStdOut(List<View> views) {
+    for (View view : views) {
       System.out.println(view.toString());
     }
   }
 
-  private void writeOutputToFile(List<AnalyticView> views) {
+  private void writeOutputToFile(List<View> views) {
     File file = new File(this.outputFileName.trim());
     try (FileOutputStream fileOutputStream = new FileOutputStream(file);
         BufferedOutputStream writer = new BufferedOutputStream(fileOutputStream)) {
 
-      for (AnalyticView view : views) {
+      for (View view : views) {
         byte[] buffer = view.getByteArray();
         writer.write(buffer, 0, buffer.length);
       }
@@ -76,10 +76,10 @@ public class MainController {
     }
   }
 
-  private List<AnalyticView> renderViews(List<TabularAnalytic> analyticsRendered, AnalyticViewFactory viewFactory) {
-    List<AnalyticView> views = new ArrayList<AnalyticView>();
+  private List<View> renderViews(List<Analytic> analyticsRendered, AnalyticViewFactory viewFactory) {
+    List<View> views = new ArrayList<View>();
 
-    for (TabularAnalytic tabularAnalytic : analyticsRendered) {
+    for (Analytic tabularAnalytic : analyticsRendered) {
       views.add(viewFactory.renderView(tabularAnalytic));
     }
 
@@ -93,8 +93,8 @@ public class MainController {
     return scaleRendered;
   }
 
-  private List<TabularAnalytic> parseAndRenderAnalytics(Scale scaleRendered) {
-    List<TabularAnalytic> analyticsRendered = new ArrayList<TabularAnalytic>();
+  private List<Analytic> parseAndRenderAnalytics(Scale scaleRendered) {
+    List<Analytic> analyticsRendered = new ArrayList<Analytic>();
 
     for (String viewRequest : this.viewRequests) {
       try {
@@ -118,7 +118,7 @@ public class MainController {
     return analyticsRendered;
   }
 
-  private TabularAnalytic getRomanNumeralAnalytic(Scale scale) throws IllegalArgumentException {
+  private Analytic getRomanNumeralAnalytic(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
       return RomanNumeralAnalytic.createRomanNumeralAnalytic((DiatonicScale) scale);
     }
@@ -127,7 +127,7 @@ public class MainController {
     }
   }
 
-  private TabularAnalytic getIntervalAnalytic(Scale scale) throws IllegalArgumentException {
+  private Analytic getIntervalAnalytic(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
       return IntervalAnalytic.createIntervalAnalytic(scale);
     }
@@ -136,7 +136,7 @@ public class MainController {
     }
   }
   
-  private TabularAnalytic getScalarAnalytic(Scale scale) throws IllegalArgumentException {
+  private Analytic getScalarAnalytic(Scale scale) throws IllegalArgumentException {
     return ScalarAnalytic.createScalarAnalytic(scale);
   }
 
@@ -152,7 +152,7 @@ public class MainController {
     }
   }
 
-  private void createOutput(List<AnalyticView> views) {
+  private void createOutput(List<View> views) {
     if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
       writeOutputToStdOut(views);
     }

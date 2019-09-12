@@ -14,13 +14,14 @@ import com.gkaraffa.cremona.helper.Helper;
 import com.gkaraffa.cremona.theoretical.scale.DiatonicScale;
 import com.gkaraffa.cremona.theoretical.scale.Scale;
 import com.gkaraffa.guarneri.view.View;
-import com.gkaraffa.guarneri.model.analytic.Analytic;
-import com.gkaraffa.guarneri.model.analytic.IntervalAnalytic;
-import com.gkaraffa.guarneri.model.analytic.RomanNumeralAnalytic;
-import com.gkaraffa.guarneri.model.analytic.ScalarAnalytic;
-import com.gkaraffa.guarneri.view.AnalyticViewFactory;
-import com.gkaraffa.guarneri.view.CSVAnalyticViewFactory;
-import com.gkaraffa.guarneri.view.TextAnalyticViewFactory;
+import com.gkaraffa.guarneri.view.ViewFactory;
+import com.gkaraffa.guarneri.model.ModelFactory;
+import com.gkaraffa.guarneri.model.ModelTable;
+import com.gkaraffa.guarneri.model.analytic.IntervalAnalyticModelFactory;
+import com.gkaraffa.guarneri.model.analytic.RomanNumeralAnalyticModelFactory;
+import com.gkaraffa.guarneri.model.analytic.ScalarAnalyticModelFactory;
+import com.gkaraffa.guarneri.view.CSVViewFactory;
+import com.gkaraffa.guarneri.view.TextViewFactory;
 
 public class MainController {
   @Parameter(names = {"--key", "-k"})
@@ -48,9 +49,9 @@ public class MainController {
 
   public void run() {
     Scale scaleRendered = this.parseAndRenderScale();
-    List<Analytic> analyticsRendered = this.parseAndRenderAnalytics(scaleRendered);
-    AnalyticViewFactory viewFactory = this.selectCreateViewFactory(formatRequest);
-    List<View> views = this.renderViews(analyticsRendered, viewFactory);
+    List<ModelTable> modelsRendered = this.parseAndRenderModels(scaleRendered);
+    ViewFactory viewFactory = this.selectCreateViewFactory(formatRequest);
+    List<View> views = this.renderViews(modelsRendered, viewFactory);
 
     this.createOutput(views);
   }
@@ -76,11 +77,11 @@ public class MainController {
     }
   }
 
-  private List<View> renderViews(List<Analytic> analyticsRendered, AnalyticViewFactory viewFactory) {
+  private List<View> renderViews(List<ModelTable> modelsRendered, ViewFactory viewFactory) {
     List<View> views = new ArrayList<View>();
 
-    for (Analytic tabularAnalytic : analyticsRendered) {
-      views.add(viewFactory.renderView(tabularAnalytic));
+    for (ModelTable modelTable : modelsRendered) {
+      views.add(viewFactory.renderView(modelTable));
     }
 
     return views;
@@ -93,20 +94,20 @@ public class MainController {
     return scaleRendered;
   }
 
-  private List<Analytic> parseAndRenderAnalytics(Scale scaleRendered) {
-    List<Analytic> analyticsRendered = new ArrayList<Analytic>();
+  private List<ModelTable> parseAndRenderModels(Scale scaleRendered) {
+    List<ModelTable> modelsRendered = new ArrayList<ModelTable>();
 
     for (String viewRequest : this.viewRequests) {
       try {
         switch (viewRequest.toUpperCase().trim()) {
           case "ROMAN":
-            analyticsRendered.add(getRomanNumeralAnalytic(scaleRendered));
+            modelsRendered.add(getRomanNumeralModel(scaleRendered));
             break;
           case "INTERVAL":
-            analyticsRendered.add(getIntervalAnalytic(scaleRendered));
+            modelsRendered.add(getIntervalModel(scaleRendered));
             break;
           case "SCALAR":
-            analyticsRendered.add(getScalarAnalytic(scaleRendered));
+            modelsRendered.add(getScalarModel(scaleRendered));
             break;
         }
       }
@@ -115,40 +116,44 @@ public class MainController {
       }
     }
 
-    return analyticsRendered;
+    return modelsRendered;
   }
 
-  private Analytic getRomanNumeralAnalytic(Scale scale) throws IllegalArgumentException {
+  private ModelTable getRomanNumeralModel(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
-      return RomanNumeralAnalytic.createRomanNumeralAnalytic((DiatonicScale) scale);
+      ModelFactory modelFactory = new RomanNumeralAnalyticModelFactory();
+      return modelFactory.createModel(scale);
     }
     else {
       throw new IllegalArgumentException("RomanNumeralAnalytic cannot be rendered for this scale");
     }
   }
 
-  private Analytic getIntervalAnalytic(Scale scale) throws IllegalArgumentException {
+  private ModelTable getIntervalModel(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
-      return IntervalAnalytic.createIntervalAnalytic(scale);
+      ModelFactory modelFactory = new IntervalAnalyticModelFactory();
+      return modelFactory.createModel(scale);
     }
     else {
       throw new IllegalArgumentException("IntervalAnalytic view cannot be rendered for this scale");
     }
   }
-  
-  private Analytic getScalarAnalytic(Scale scale) throws IllegalArgumentException {
-    return ScalarAnalytic.createScalarAnalytic(scale);
+
+  private ModelTable getScalarModel(Scale scale) {
+    ModelFactory modelFactory = new ScalarAnalyticModelFactory();
+    return modelFactory.createModel(scale);
   }
 
-  private AnalyticViewFactory selectCreateViewFactory(String formatRequest) {
+
+  private ViewFactory selectCreateViewFactory(String formatRequest) {
     OutputFormat outputFormat = OutputFormat.getOutputFormat(formatRequest);
-    switch(outputFormat) {
+    switch (outputFormat) {
       case CSV:
-        return new CSVAnalyticViewFactory();
+        return new CSVViewFactory();
       case TXT:
-        return new TextAnalyticViewFactory();
+        return new TextViewFactory();
       default:
-        return new TextAnalyticViewFactory();
+        return new TextViewFactory();
     }
   }
 

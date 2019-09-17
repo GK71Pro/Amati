@@ -13,15 +13,15 @@ import com.beust.jcommander.IStringConverter;
 import com.gkaraffa.cremona.helper.Helper;
 import com.gkaraffa.cremona.theoretical.scale.DiatonicScale;
 import com.gkaraffa.cremona.theoretical.scale.Scale;
-import com.gkaraffa.guarneri.view.View;
+import com.gkaraffa.guarneri.outputform.CSVOutputFormFactory;
+import com.gkaraffa.guarneri.outputform.OutputForm;
+import com.gkaraffa.guarneri.outputform.OutputFormFactory;
+import com.gkaraffa.guarneri.outputform.TextOutputFormFactory;
 import com.gkaraffa.guarneri.view.ViewFactory;
-import com.gkaraffa.guarneri.model.ModelFactory;
-import com.gkaraffa.guarneri.model.ModelTable;
-import com.gkaraffa.guarneri.model.analytic.IntervalAnalyticModelFactory;
-import com.gkaraffa.guarneri.model.analytic.RomanNumeralAnalyticModelFactory;
-import com.gkaraffa.guarneri.model.analytic.ScalarAnalyticModelFactory;
-import com.gkaraffa.guarneri.view.CSVViewFactory;
-import com.gkaraffa.guarneri.view.TextViewFactory;
+import com.gkaraffa.guarneri.view.ViewTable;
+import com.gkaraffa.guarneri.view.analytic.IntervalAnalyticViewFactory;
+import com.gkaraffa.guarneri.view.analytic.RomanNumeralAnalyticViewFactory;
+import com.gkaraffa.guarneri.view.analytic.ScalarAnalyticViewFactory;
 
 public class MainController {
   @Parameter(names = {"--key", "-k"})
@@ -49,25 +49,25 @@ public class MainController {
 
   public void run() {
     Scale scaleRendered = this.parseAndRenderScale();
-    List<ModelTable> modelsRendered = this.parseAndRenderModels(scaleRendered);
-    ViewFactory viewFactory = this.selectCreateViewFactory(formatRequest);
-    List<View> views = this.renderViews(modelsRendered, viewFactory);
+    List<ViewTable> modelsRendered = this.parseAndRenderModels(scaleRendered);
+    OutputFormFactory viewFactory = this.selectCreateViewFactory(formatRequest);
+    List<OutputForm> views = this.renderViews(modelsRendered, viewFactory);
 
     this.createOutput(views);
   }
 
-  private void writeOutputToStdOut(List<View> views) {
-    for (View view : views) {
+  private void writeOutputToStdOut(List<OutputForm> views) {
+    for (OutputForm view : views) {
       System.out.println(view.toString());
     }
   }
 
-  private void writeOutputToFile(List<View> views) {
+  private void writeOutputToFile(List<OutputForm> views) {
     File file = new File(this.outputFileName.trim());
     try (FileOutputStream fileOutputStream = new FileOutputStream(file);
         BufferedOutputStream writer = new BufferedOutputStream(fileOutputStream)) {
 
-      for (View view : views) {
+      for (OutputForm view : views) {
         byte[] buffer = view.getByteArray();
         writer.write(buffer, 0, buffer.length);
       }
@@ -77,10 +77,10 @@ public class MainController {
     }
   }
 
-  private List<View> renderViews(List<ModelTable> modelsRendered, ViewFactory viewFactory) {
-    List<View> views = new ArrayList<View>();
+  private List<OutputForm> renderViews(List<ViewTable> modelsRendered, OutputFormFactory viewFactory) {
+    List<OutputForm> views = new ArrayList<OutputForm>();
 
-    for (ModelTable modelTable : modelsRendered) {
+    for (ViewTable modelTable : modelsRendered) {
       views.add(viewFactory.renderView(modelTable));
     }
 
@@ -94,8 +94,8 @@ public class MainController {
     return scaleRendered;
   }
 
-  private List<ModelTable> parseAndRenderModels(Scale scaleRendered) {
-    List<ModelTable> modelsRendered = new ArrayList<ModelTable>();
+  private List<ViewTable> parseAndRenderModels(Scale scaleRendered) {
+    List<ViewTable> modelsRendered = new ArrayList<ViewTable>();
 
     for (String viewRequest : this.viewRequests) {
       try {
@@ -119,9 +119,9 @@ public class MainController {
     return modelsRendered;
   }
 
-  private ModelTable getRomanNumeralModel(Scale scale) throws IllegalArgumentException {
+  private ViewTable getRomanNumeralModel(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
-      ModelFactory modelFactory = new RomanNumeralAnalyticModelFactory();
+      ViewFactory modelFactory = new RomanNumeralAnalyticViewFactory();
       return modelFactory.createModel(scale);
     }
     else {
@@ -129,9 +129,9 @@ public class MainController {
     }
   }
 
-  private ModelTable getIntervalModel(Scale scale) throws IllegalArgumentException {
+  private ViewTable getIntervalModel(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
-      ModelFactory modelFactory = new IntervalAnalyticModelFactory();
+      ViewFactory modelFactory = new IntervalAnalyticViewFactory();
       return modelFactory.createModel(scale);
     }
     else {
@@ -139,25 +139,25 @@ public class MainController {
     }
   }
 
-  private ModelTable getScalarModel(Scale scale) {
-    ModelFactory modelFactory = new ScalarAnalyticModelFactory();
+  private ViewTable getScalarModel(Scale scale) {
+    ViewFactory modelFactory = new ScalarAnalyticViewFactory();
     return modelFactory.createModel(scale);
   }
 
 
-  private ViewFactory selectCreateViewFactory(String formatRequest) {
+  private OutputFormFactory selectCreateViewFactory(String formatRequest) {
     OutputFormat outputFormat = OutputFormat.getOutputFormat(formatRequest);
     switch (outputFormat) {
       case CSV:
-        return new CSVViewFactory();
+        return new CSVOutputFormFactory();
       case TXT:
-        return new TextViewFactory();
+        return new TextOutputFormFactory();
       default:
-        return new TextViewFactory();
+        return new TextOutputFormFactory();
     }
   }
 
-  private void createOutput(List<View> views) {
+  private void createOutput(List<OutputForm> views) {
     if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
       writeOutputToStdOut(views);
     }

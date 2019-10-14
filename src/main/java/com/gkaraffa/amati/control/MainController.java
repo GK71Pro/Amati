@@ -16,7 +16,7 @@ import com.gkaraffa.cremona.theoretical.scale.Scale;
 import com.gkaraffa.guarneri.outputform.CSVOutputFormFactory;
 import com.gkaraffa.guarneri.outputform.OutputForm;
 import com.gkaraffa.guarneri.outputform.OutputFormFactory;
-import com.gkaraffa.guarneri.outputform.TextOutputFormFactory;
+import com.gkaraffa.guarneri.outputform.TabularTextOutputFormFactory;
 import com.gkaraffa.guarneri.view.ViewFactory;
 import com.gkaraffa.guarneri.view.ViewTable;
 import com.gkaraffa.guarneri.view.analytic.IntervalAnalyticViewFactory;
@@ -151,9 +151,9 @@ public class MainController {
       case CSV:
         return new CSVOutputFormFactory();
       case TXT:
-        return new TextOutputFormFactory();
+        return new TabularTextOutputFormFactory();
       default:
-        return new TextOutputFormFactory();
+        return new TabularTextOutputFormFactory();
     }
   }
 

@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.IStringConverter;
 import com.gkaraffa.cremona.helper.ScaleHelper;
 import com.gkaraffa.cremona.theoretical.scale.DiatonicScale;
 import com.gkaraffa.cremona.theoretical.scale.Scale;
@@ -52,6 +50,7 @@ public class MainController {
 
   private void writeOutputToFile(List<OutputForm> views) {
     File file = new File(arguments.getOutputFileName().trim());
+    
     try (FileOutputStream fileOutputStream = new FileOutputStream(file);
         BufferedOutputStream writer = new BufferedOutputStream(fileOutputStream)) {
 
@@ -133,9 +132,9 @@ public class MainController {
     return viewFactory.createView(new ViewQuery(scale));
   }
 
-
   private OutputFormFactory selectCreateViewFactory(String formatRequest) {
     OutputFormat outputFormat = OutputFormat.getOutputFormat(formatRequest);
+    
     switch (outputFormat) {
       case CSV:
         return new CSVOutputFormFactory();
@@ -148,6 +147,7 @@ public class MainController {
 
   private void createOutput(List<OutputForm> views) {
     String outputFileName = arguments.getOutputFileName();
+    
     if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
       writeOutputToStdOut(views);
     }

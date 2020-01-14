@@ -18,9 +18,9 @@ import com.gkaraffa.guarneri.outputform.TabularTextOutputFormFactory;
 import com.gkaraffa.guarneri.view.ViewFactory;
 import com.gkaraffa.guarneri.view.ViewQuery;
 import com.gkaraffa.guarneri.view.ViewTable;
-import com.gkaraffa.guarneri.view.analytic.IntervalAnalyticViewFactory;
-import com.gkaraffa.guarneri.view.analytic.RomanNumeralAnalyticViewFactory;
-import com.gkaraffa.guarneri.view.analytic.ScalarAnalyticViewFactory;
+import com.gkaraffa.guarneri.view.analytic.scale.IntervalAnalyticViewFactory;
+import com.gkaraffa.guarneri.view.analytic.scale.RomanNumeralAnalyticViewFactory;
+import com.gkaraffa.guarneri.view.analytic.scale.StepPatternAnalyticFactory;
 
 public class MainController {
   private Arguments arguments = null;
@@ -94,8 +94,8 @@ public class MainController {
           case "INTERVAL":
             viewsRendered.add(getIntervalModel(scaleRendered));
             break;
-          case "SCALAR":
-            viewsRendered.add(getScalarModel(scaleRendered));
+          case "STEP":
+            viewsRendered.add(getStepPatternModel(scaleRendered));
             break;
         }
       }
@@ -127,8 +127,8 @@ public class MainController {
     }
   }
 
-  private ViewTable getScalarModel(Scale scale) {
-    ViewFactory viewFactory = new ScalarAnalyticViewFactory();
+  private ViewTable getStepPatternModel(Scale scale) {
+    ViewFactory viewFactory = new StepPatternAnalyticFactory();
     return viewFactory.createView(new ViewQuery(scale));
   }
 

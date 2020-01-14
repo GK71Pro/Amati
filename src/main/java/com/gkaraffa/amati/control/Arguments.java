@@ -19,9 +19,6 @@ public class Arguments {
   @Parameter(names = "--views", listConverter = ViewListConverter.class)
   List<String> viewRequests;
   
-  @Parameter(names = "--instruments", listConverter = ViewListConverter.class)
-  List<String> instrumentRequests;
-
   @Parameter(names = {"--output", "-o"})
   private String outputFileName;
   
@@ -39,10 +36,6 @@ public class Arguments {
 
   public List<String> getViewRequests() {
     return viewRequests;
-  }
-
-  public List<String> getInstrumentRequests() {
-    return instrumentRequests;
   }
 
   public String getOutputFileName() {

@@ -19,6 +19,7 @@ import com.gkaraffa.guarneri.view.ViewFactory;
 import com.gkaraffa.guarneri.view.ViewQuery;
 import com.gkaraffa.guarneri.view.ViewTable;
 import com.gkaraffa.guarneri.view.analytic.scale.IntervalAnalyticViewFactory;
+import com.gkaraffa.guarneri.view.analytic.scale.ReharmonizationOptionsAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.RomanNumeralAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.StepPatternAnalyticFactory;
 
@@ -89,13 +90,16 @@ public class MainController {
       try {
         switch (viewRequest.toUpperCase().trim()) {
           case "ROMAN":
-            viewsRendered.add(getRomanNumeralModel(scaleRendered));
+            viewsRendered.add(this.getRomanNumeralAnalytic(scaleRendered));
             break;
           case "INTERVAL":
-            viewsRendered.add(getIntervalModel(scaleRendered));
+            viewsRendered.add(this.getIntervalAnalytic(scaleRendered));
             break;
           case "STEP":
-            viewsRendered.add(getStepPatternModel(scaleRendered));
+            viewsRendered.add(this.getStepPatternAnalytic(scaleRendered));
+            break;
+          case "REHARM":
+            viewsRendered.add(this.getReharmonizationOptionsAnalytic(scaleRendered));
             break;
         }
       }
@@ -107,7 +111,7 @@ public class MainController {
     return viewsRendered;
   }
 
-  private ViewTable getRomanNumeralModel(Scale scale) throws IllegalArgumentException {
+  private ViewTable getRomanNumeralAnalytic(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
       ViewFactory viewFactory = new RomanNumeralAnalyticViewFactory();
       return viewFactory.createView(new ViewQuery(scale));
@@ -117,7 +121,7 @@ public class MainController {
     }
   }
 
-  private ViewTable getIntervalModel(Scale scale) throws IllegalArgumentException {
+  private ViewTable getIntervalAnalytic(Scale scale) throws IllegalArgumentException {
     if (scale instanceof DiatonicScale) {
       ViewFactory viewFactory = new IntervalAnalyticViewFactory();
       return viewFactory.createView(new ViewQuery(scale));
@@ -127,8 +131,14 @@ public class MainController {
     }
   }
 
-  private ViewTable getStepPatternModel(Scale scale) {
+  private ViewTable getStepPatternAnalytic(Scale scale) {
     ViewFactory viewFactory = new StepPatternAnalyticFactory();
+    return viewFactory.createView(new ViewQuery(scale));
+  }
+  
+  private ViewTable getReharmonizationOptionsAnalytic(Scale scale) {
+    ViewFactory viewFactory = new ReharmonizationOptionsAnalyticViewFactory();
+    
     return viewFactory.createView(new ViewQuery(scale));
   }
 
@@ -149,10 +159,10 @@ public class MainController {
     String outputFileName = arguments.getOutputFileName();
     
     if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
-      writeOutputToStdOut(views);
+      this.writeOutputToStdOut(views);
     }
     else {
-      writeOutputToFile(views);
+      this.writeOutputToFile(views);
     }
   }
 }

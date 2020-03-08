@@ -51,7 +51,7 @@ public class MainController {
 
   private void writeOutputToFile(List<OutputForm> views) {
     File file = new File(arguments.getOutputFileName().trim());
-    
+
     try (FileOutputStream fileOutputStream = new FileOutputStream(file);
         BufferedOutputStream writer = new BufferedOutputStream(fileOutputStream)) {
 
@@ -65,7 +65,8 @@ public class MainController {
     }
   }
 
-  private List<OutputForm> renderAnalytics(List<ViewTable> modelsRendered, OutputFormFactory viewFactory) {
+  private List<OutputForm> renderAnalytics(List<ViewTable> modelsRendered,
+      OutputFormFactory viewFactory) {
     List<OutputForm> analytics = new ArrayList<OutputForm>();
 
     for (ViewTable modelTable : modelsRendered) {
@@ -135,16 +136,16 @@ public class MainController {
     ViewFactory viewFactory = new StepPatternAnalyticFactory();
     return viewFactory.createView(new ViewQuery(scale));
   }
-  
+
   private ViewTable getReharmonizationOptionsAnalytic(Scale scale) {
     ViewFactory viewFactory = new ReharmonizationOptionsAnalyticViewFactory();
-    
+
     return viewFactory.createView(new ViewQuery(scale));
   }
 
   private OutputFormFactory selectCreateViewFactory(String formatRequest) {
     OutputFormat outputFormat = OutputFormat.getOutputFormat(formatRequest);
-    
+
     switch (outputFormat) {
       case CSV:
         return new CSVOutputFormFactory();
@@ -157,7 +158,7 @@ public class MainController {
 
   private void createOutput(List<OutputForm> views) {
     String outputFileName = arguments.getOutputFileName();
-    
+
     if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
       this.writeOutputToStdOut(views);
     }

@@ -18,10 +18,10 @@ public class Arguments {
 
   @Parameter(names = "--views", listConverter = ViewListConverter.class)
   List<String> viewRequests;
-  
+
   @Parameter(names = {"--output", "-o"})
   private String outputFileName;
-  
+
   public String getKeyRequest() {
     return keyRequest;
   }

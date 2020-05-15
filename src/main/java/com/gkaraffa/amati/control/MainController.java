@@ -9,9 +9,9 @@ import java.util.List;
 
 import com.beust.jcommander.JCommander;
 import com.gkaraffa.cremona.helper.ScaleHelper;
-import com.gkaraffa.cremona.theoretical.Tone;
 import com.gkaraffa.cremona.theoretical.scale.DiatonicScale;
 import com.gkaraffa.cremona.theoretical.scale.Scale;
+import com.gkaraffa.guarneri.old.ReharmonizationOptionsAnalyticViewFactory;
 import com.gkaraffa.guarneri.outputform.CSVOutputFormFactory;
 import com.gkaraffa.guarneri.outputform.OutputForm;
 import com.gkaraffa.guarneri.outputform.OutputFormFactory;
@@ -21,14 +21,13 @@ import com.gkaraffa.guarneri.view.ViewQuery;
 import com.gkaraffa.guarneri.view.ViewQueryBuilder;
 import com.gkaraffa.guarneri.view.ViewTable;
 import com.gkaraffa.guarneri.view.analytic.scale.IntervalAnalyticViewFactory;
-import com.gkaraffa.guarneri.view.analytic.scale.ReharmonizationOptionsAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.RomanNumeralAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.StepPatternAnalyticFactory;
 
 public class MainController {
   private Arguments arguments = null;
   private RuntimeObjects runtimeObjects = null;
-  
+
 
   public static void main(String[] args) {
     MainController mainController = new MainController();
@@ -41,19 +40,20 @@ public class MainController {
     this.arguments = arguments;
     this.runtimeObjects = this.createRuntimeObjects(arguments);
     List<ViewTable> modelsRendered = this.parseAndRenderAnalytics(this.runtimeObjects);
-    OutputFormFactory viewFactory = this.selectCreateOutputFormFactory(arguments.getFormatRequest());
+    OutputFormFactory viewFactory =
+        this.selectCreateOutputFormFactory(arguments.getFormatRequest());
     List<OutputForm> views = this.renderAnalytics(modelsRendered, viewFactory);
 
     this.createOutput(views);
   }
-  
+
   private RuntimeObjects createRuntimeObjects(Arguments arguments) {
-    Tone requestedKey = this.parseAndRenderKey(arguments.getKeyRequest());
-    Scale requestedScale = this.parseAndRenderScale(arguments.getKeyRequest(), arguments.getScaleRequest());
+    Scale requestedScale =
+        this.parseAndRenderScale(arguments.getKeyRequest(), arguments.getScaleRequest());
     List<String> requestedViews = arguments.getViewRequests();
-    
-    RuntimeObjects runtimeObjects = new RuntimeObjects(requestedKey, requestedScale, requestedViews);
-    
+
+    RuntimeObjects runtimeObjects = new RuntimeObjects(requestedScale, requestedViews);
+
     return runtimeObjects;
   }
 
@@ -90,11 +90,6 @@ public class MainController {
     return analytics;
   }
 
-  private Tone parseAndRenderKey(String keyRequest) {
-    return Tone.stringToTone(keyRequest);
-  }
-  
-
   private Scale parseAndRenderScale(String keyRequest, String scaleRequest) {
     ScaleHelper helper = ScaleHelper.getInstance();
     Scale scaleRendered = helper.getScale(keyRequest, scaleRequest);
@@ -108,7 +103,7 @@ public class MainController {
 
     vQB.insertCriteria("Scale", runtimeObjects.getRequestedScale());
     ViewQuery viewQuery = vQB.compileViewQuery();
-    
+
     for (String viewRequest : runtimeObjects.requestedViews) {
       try {
         switch (viewRequest.toUpperCase().trim()) {
@@ -136,7 +131,7 @@ public class MainController {
 
 
   private ViewTable getRomanNumeralAnalytic(ViewQuery viewQuery) throws IllegalArgumentException {
-    if ((Scale)viewQuery.getCriteria("Scale") instanceof DiatonicScale) {
+    if ((Scale) viewQuery.getCriteria("Scale") instanceof DiatonicScale) {
       ViewFactory viewFactory = new RomanNumeralAnalyticViewFactory();
       return viewFactory.createView(viewQuery);
     }
@@ -146,7 +141,7 @@ public class MainController {
   }
 
   private ViewTable getIntervalAnalytic(ViewQuery viewQuery) throws IllegalArgumentException {
-    if ((Scale)viewQuery.getCriteria("Scale")  instanceof DiatonicScale) {
+    if ((Scale) viewQuery.getCriteria("Scale") instanceof DiatonicScale) {
       ViewFactory viewFactory = new IntervalAnalyticViewFactory();
       return viewFactory.createView(viewQuery);
     }
@@ -189,29 +184,23 @@ public class MainController {
       this.writeOutputToFile(views);
     }
   }
-  
-  class RuntimeObjects{
-    private Tone requestedKey = null;
+
+  class RuntimeObjects {
     private Scale requestedScale = null;
     private List<String> requestedViews = null;
-    
-    public RuntimeObjects(Tone requestedKey, Scale requestedScale, List<String> requestedViews) {
-      this.requestedKey = requestedKey;
+
+    public RuntimeObjects(Scale requestedScale, List<String> requestedViews) {
       this.requestedScale = requestedScale;
       this.requestedViews = requestedViews;
     }
-    
-    public Tone getRequestedKey() {
-      return requestedKey;
-    }
-    
+
     public Scale getRequestedScale() {
       return requestedScale;
     }
-    
-    public List<String> getRequestedViews(){
+
+    public List<String> getRequestedViews() {
       return requestedViews;
     }
   }
-  
+
 }

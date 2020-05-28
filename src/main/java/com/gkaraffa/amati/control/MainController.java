@@ -9,9 +9,9 @@ import java.util.List;
 
 import com.beust.jcommander.JCommander;
 import com.gkaraffa.cremona.helper.ScaleHelper;
+import com.gkaraffa.cremona.theoretical.Tone;
 import com.gkaraffa.cremona.theoretical.scale.DiatonicScale;
 import com.gkaraffa.cremona.theoretical.scale.Scale;
-import com.gkaraffa.guarneri.old.ReharmonizationOptionsAnalyticViewFactory;
 import com.gkaraffa.guarneri.outputform.CSVOutputFormFactory;
 import com.gkaraffa.guarneri.outputform.OutputForm;
 import com.gkaraffa.guarneri.outputform.OutputFormFactory;
@@ -20,13 +20,17 @@ import com.gkaraffa.guarneri.view.ViewFactory;
 import com.gkaraffa.guarneri.view.ViewQuery;
 import com.gkaraffa.guarneri.view.ViewQueryBuilder;
 import com.gkaraffa.guarneri.view.ViewTable;
+import com.gkaraffa.guarneri.view.analytic.key.ParallelModeAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.IntervalAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.RomanNumeralAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.StepPatternAnalyticFactory;
 
 public class MainController {
+  /*
   private Arguments arguments = null;
   private RuntimeObjects runtimeObjects = null;
+  private Branch branch = null;
+  */
 
 
   public static void main(String[] args) {
@@ -37,25 +41,75 @@ public class MainController {
   }
 
   public void run(Arguments arguments) {
-    this.arguments = arguments;
-    this.runtimeObjects = this.createRuntimeObjects(arguments);
-    List<ViewTable> modelsRendered = this.parseAndRenderAnalytics(this.runtimeObjects);
-    OutputFormFactory viewFactory =
-        this.selectCreateOutputFormFactory(arguments.getFormatRequest());
-    List<OutputForm> views = this.renderAnalytics(modelsRendered, viewFactory);
+    Branch branch = this.determineBranch(arguments);
+    OutputFormFactory viewFactory = this.selectCreateOutputFormFactory(arguments);
+    List<ViewTable> viewTables = null;
 
-    this.createOutput(views);
+    switch (branch) {
+      case KEY:
+        viewTables = this.parseAndRenderKeyAnalytics(arguments);
+        break;
+
+      case SCALE:
+        viewTables = this.parseAndRenderScaleAnalytics(arguments);
+        break;
+
+      default:
+        throw new IllegalArgumentException();
+    }
+
+    List<OutputForm> views = this.renderAnalytics(viewTables, viewFactory);
+    this.createOutput(arguments, views);
   }
 
-  private RuntimeObjects createRuntimeObjects(Arguments arguments) {
+  private List<ViewTable> parseAndRenderKeyAnalytics(Arguments arguments) {
+    List<ViewTable> viewTables = new ArrayList<ViewTable>();
+    Tone requestedKey = Tone.stringToTone(arguments.getKeyRequest().trim().toUpperCase());
+    ViewQueryBuilder vQB = new ViewQueryBuilder();
+
+    vQB.insertCriteria("Key", requestedKey);
+    ViewQuery viewQuery = vQB.compileViewQuery();
+    viewTables.add(this.getParallelModeAnalyticFactory(viewQuery));
+
+    return viewTables;
+  }
+
+
+  private List<ViewTable> parseAndRenderScaleAnalytics(Arguments arguments) {
+    List<ViewTable> viewTables = new ArrayList<ViewTable>();
     Scale requestedScale =
         this.parseAndRenderScale(arguments.getKeyRequest(), arguments.getScaleRequest());
-    List<String> requestedViews = arguments.getViewRequests();
+    ViewQueryBuilder vQB = new ViewQueryBuilder();
 
-    RuntimeObjects runtimeObjects = new RuntimeObjects(requestedScale, requestedViews);
+    vQB.insertCriteria("Scale", requestedScale);
+    ViewQuery viewQuery = vQB.compileViewQuery();
 
-    return runtimeObjects;
+    viewTables.add(this.getRomanNumeralAnalytic(viewQuery));
+    viewTables.add(this.getIntervalAnalytic(viewQuery));
+    viewTables.add(this.getStepPatternAnalytic(viewQuery));
+
+    return viewTables;
   }
+
+  private Branch determineBranch(Arguments arguments) {
+    Branch branch = null;
+    String requestType = arguments.getRequestType().trim().toUpperCase();
+
+    switch (requestType) {
+      case "KEY":
+        branch = Branch.KEY;
+        break;
+      case "SCALE":
+        branch = Branch.SCALE;
+        break;
+      default:
+        throw new IllegalArgumentException();
+    }
+
+    return branch;
+  }
+
+
 
   private void writeOutputToStdOut(List<OutputForm> views) {
     for (OutputForm view : views) {
@@ -63,7 +117,7 @@ public class MainController {
     }
   }
 
-  private void writeOutputToFile(List<OutputForm> views) {
+  private void writeOutputToFile(Arguments arguments, List<OutputForm> views) {
     File file = new File(arguments.getOutputFileName().trim());
 
     try (FileOutputStream fileOutputStream = new FileOutputStream(file);
@@ -97,39 +151,6 @@ public class MainController {
     return scaleRendered;
   }
 
-  private List<ViewTable> parseAndRenderAnalytics(RuntimeObjects runtimeObjects) {
-    List<ViewTable> viewsRendered = new ArrayList<ViewTable>();
-    ViewQueryBuilder vQB = new ViewQueryBuilder();
-
-    vQB.insertCriteria("Scale", runtimeObjects.getRequestedScale());
-    ViewQuery viewQuery = vQB.compileViewQuery();
-
-    for (String viewRequest : runtimeObjects.requestedViews) {
-      try {
-        switch (viewRequest.toUpperCase().trim()) {
-          case "ROMAN":
-            viewsRendered.add(this.getRomanNumeralAnalytic(viewQuery));
-            break;
-          case "INTERVAL":
-            viewsRendered.add(this.getIntervalAnalytic(viewQuery));
-            break;
-          case "STEP":
-            viewsRendered.add(this.getStepPatternAnalytic(viewQuery));
-            break;
-          case "REHARM":
-            viewsRendered.add(this.getReharmonizationOptionsAnalytic(viewQuery));
-            break;
-        }
-      }
-      catch (IllegalArgumentException iAE) {
-        iAE.printStackTrace();
-      }
-    }
-
-    return viewsRendered;
-  }
-
-
   private ViewTable getRomanNumeralAnalytic(ViewQuery viewQuery) throws IllegalArgumentException {
     if ((Scale) viewQuery.getCriteria("Scale") instanceof DiatonicScale) {
       ViewFactory viewFactory = new RomanNumeralAnalyticViewFactory();
@@ -155,14 +176,15 @@ public class MainController {
     return viewFactory.createView(viewQuery);
   }
 
-  private ViewTable getReharmonizationOptionsAnalytic(ViewQuery viewQuery) {
-    ViewFactory viewFactory = new ReharmonizationOptionsAnalyticViewFactory();
+  private ViewTable getParallelModeAnalyticFactory(ViewQuery viewQuery) {
+    ViewFactory viewFactory = new ParallelModeAnalyticViewFactory();
 
     return viewFactory.createView(viewQuery);
   }
 
-  private OutputFormFactory selectCreateOutputFormFactory(String formatRequest) {
-    OutputFormat outputFormat = OutputFormat.getOutputFormat(formatRequest);
+  private OutputFormFactory selectCreateOutputFormFactory(Arguments arguments) {
+    OutputFormat outputFormat =
+        OutputFormat.getOutputFormat(arguments.getFormatRequest().trim().toUpperCase());
 
     switch (outputFormat) {
       case CSV:
@@ -174,32 +196,34 @@ public class MainController {
     }
   }
 
-  private void createOutput(List<OutputForm> views) {
+  private void createOutput(Arguments arguments, List<OutputForm> views) {
     String outputFileName = arguments.getOutputFileName();
 
     if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
       this.writeOutputToStdOut(views);
     }
     else {
-      this.writeOutputToFile(views);
+      this.writeOutputToFile(arguments, views);
     }
   }
 
-  class RuntimeObjects {
-    private Scale requestedScale = null;
-    private List<String> requestedViews = null;
+  enum Branch {
+    KEY("KEY"),
+    SCALE("SCALE");
 
-    public RuntimeObjects(Scale requestedScale, List<String> requestedViews) {
-      this.requestedScale = requestedScale;
-      this.requestedViews = requestedViews;
+    Branch(String text) {
+      this.text = text;
     }
 
-    public Scale getRequestedScale() {
-      return requestedScale;
+    private final String text;
+
+    public final String getText() {
+      return text;
     }
 
-    public List<String> getRequestedViews() {
-      return requestedViews;
+    @Override
+    public final String toString() {
+      return text;
     }
   }
 

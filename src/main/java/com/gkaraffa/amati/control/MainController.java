@@ -26,12 +26,6 @@ import com.gkaraffa.guarneri.view.analytic.scale.RomanNumeralAnalyticViewFactory
 import com.gkaraffa.guarneri.view.analytic.scale.StepPatternAnalyticFactory;
 
 public class MainController {
-  /*
-  private Arguments arguments = null;
-  private RuntimeObjects runtimeObjects = null;
-  private Branch branch = null;
-  */
-
 
   public static void main(String[] args) {
     MainController mainController = new MainController();
@@ -41,59 +35,122 @@ public class MainController {
   }
 
   public void run(Arguments arguments) {
-    Branch branch = this.determineBranch(arguments);
-    OutputFormFactory viewFactory = this.selectCreateOutputFormFactory(arguments);
-    List<ViewTable> viewTables = null;
+    try {
+      RuntimeObject runtimeObject = this.argumentParseAndValidation(arguments);
+      Branch branch = this.determineBranch(runtimeObject.typeRequest);
+      OutputFormFactory viewFactory =
+          this.selectCreateOutputFormFactory(runtimeObject.formatRequest);
+      List<ViewTable> viewTables = null;
 
-    switch (branch) {
-      case KEY:
-        viewTables = this.parseAndRenderKeyAnalytics(arguments);
-        break;
+      switch (branch) {
+        case KEY:
+          viewTables = this.parseAndRenderKeyAnalytics(runtimeObject);
+          break;
 
-      case SCALE:
-        viewTables = this.parseAndRenderScaleAnalytics(arguments);
-        break;
+        case SCALE:
+          viewTables = this.parseAndRenderScaleAnalytics(runtimeObject);
+          break;
 
-      default:
-        throw new IllegalArgumentException();
+        default:
+          throw new IllegalArgumentException();
+      }
+
+      List<OutputForm> views = this.renderAnalytics(viewTables, viewFactory);
+
+      this.createOutput(runtimeObject, views);
+    }
+    catch (IllegalArgumentException iAE) {
+      iAE.printStackTrace();
+    }
+  }
+
+  private RuntimeObject argumentParseAndValidation(Arguments arguments)
+      throws IllegalArgumentException {
+    RuntimeObject runtimeObject = new RuntimeObject();
+
+    runtimeObject.typeRequest = this.parseAndValidateType(arguments);
+    runtimeObject.keyRequest = this.parseAndValidateKey(arguments);
+    if (runtimeObject.typeRequest.equals("SCALE")) {
+      runtimeObject.scaleRequest = this.parseAndValidateScale(arguments, runtimeObject.keyRequest);
     }
 
-    List<OutputForm> views = this.renderAnalytics(viewTables, viewFactory);
-    this.createOutput(arguments, views);
+    runtimeObject.formatRequest = this.parseAndValidateFormat(arguments);
+    runtimeObject.outputFileName =
+        this.parseAndValidateOutputFile(arguments, runtimeObject.formatRequest);
+
+    return runtimeObject;
   }
 
-  private List<ViewTable> parseAndRenderKeyAnalytics(Arguments arguments) {
-    List<ViewTable> viewTables = new ArrayList<ViewTable>();
-    Tone requestedKey = Tone.stringToTone(arguments.getKeyRequest().trim().toUpperCase());
-    ViewQueryBuilder vQB = new ViewQueryBuilder();
+  private String parseAndValidateType(Arguments arguments) throws IllegalArgumentException {
+    String typeRequest = arguments.getTypeRequest();
+    if (typeRequest == null) {
+      throw new IllegalArgumentException("Run type not specified.");
+    }
 
-    vQB.insertCriteria("Key", requestedKey);
-    ViewQuery viewQuery = vQB.compileViewQuery();
-    viewTables.add(this.getParallelModeAnalyticFactory(viewQuery));
+    typeRequest = typeRequest.trim().toUpperCase();
+    if (!(typeRequest.equals("KEY") || typeRequest.equals("SCALE"))) {
+      throw new IllegalArgumentException("Unexpected run type.");
+    }
 
-    return viewTables;
+    return typeRequest;
   }
 
+  private Tone parseAndValidateKey(Arguments arguments) throws IllegalArgumentException {
+    String keyString = arguments.getKeyRequest();
 
-  private List<ViewTable> parseAndRenderScaleAnalytics(Arguments arguments) {
-    List<ViewTable> viewTables = new ArrayList<ViewTable>();
-    Scale requestedScale =
-        this.parseAndRenderScale(arguments.getKeyRequest(), arguments.getScaleRequest());
-    ViewQueryBuilder vQB = new ViewQueryBuilder();
+    if (keyString == null) {
+      throw new IllegalArgumentException("Key not specified.");
+    }
 
-    vQB.insertCriteria("Scale", requestedScale);
-    ViewQuery viewQuery = vQB.compileViewQuery();
+    Tone keyTone = Tone.stringToTone(keyString.trim().toUpperCase());
 
-    viewTables.add(this.getRomanNumeralAnalytic(viewQuery));
-    viewTables.add(this.getIntervalAnalytic(viewQuery));
-    viewTables.add(this.getStepPatternAnalytic(viewQuery));
-
-    return viewTables;
+    return keyTone;
   }
 
-  private Branch determineBranch(Arguments arguments) {
+  private Scale parseAndValidateScale(Arguments arguments, Tone requestedKey)
+      throws IllegalArgumentException {
+    String scaleString = arguments.getScaleRequest();
+
+    if (scaleString == null) {
+      throw new IllegalArgumentException("Scale not specified.");
+    }
+
+    Scale scale = this.parseAndRenderScale(arguments.getKeyRequest(), arguments.getScaleRequest());
+
+    return scale;
+  }
+
+  private OutputFormat parseAndValidateFormat(Arguments arguments) throws IllegalArgumentException {
+    String formatString = arguments.getFormatRequest();
+
+    if (formatString == null) {
+      throw new IllegalArgumentException("Format not specified");
+    }
+
+    formatString = formatString.trim().toUpperCase();
+    OutputFormat outputFormat = OutputFormat.getOutputFormat(formatString);
+
+    return outputFormat;
+  }
+
+  private String parseAndValidateOutputFile(Arguments arguments, OutputFormat outputFormat)
+      throws IllegalArgumentException {
+    String outputFileName = arguments.getOutputFileName();
+
+    if (outputFileName == null) {
+      if ((outputFormat == OutputFormat.XLS) || (outputFormat == OutputFormat.XLSX)) {
+        throw new IllegalArgumentException("External file must be specified for given format.");
+      }
+      else {
+        return null;
+      }
+    }
+
+    return outputFileName.trim();
+  }
+
+  private Branch determineBranch(String requestType) {
     Branch branch = null;
-    String requestType = arguments.getRequestType().trim().toUpperCase();
 
     switch (requestType) {
       case "KEY":
@@ -109,28 +166,29 @@ public class MainController {
     return branch;
   }
 
+  private List<ViewTable> parseAndRenderKeyAnalytics(RuntimeObject runtimeObject) {
+    List<ViewTable> viewTables = new ArrayList<ViewTable>();
+    ViewQueryBuilder vQB = new ViewQueryBuilder();
 
+    vQB.insertCriteria("Key", runtimeObject.keyRequest);
+    ViewQuery viewQuery = vQB.compileViewQuery();
+    viewTables.add(this.getParallelModeAnalyticFactory(viewQuery));
 
-  private void writeOutputToStdOut(List<OutputForm> views) {
-    for (OutputForm view : views) {
-      System.out.println(view.toString());
-    }
+    return viewTables;
   }
 
-  private void writeOutputToFile(Arguments arguments, List<OutputForm> views) {
-    File file = new File(arguments.getOutputFileName().trim());
+  private List<ViewTable> parseAndRenderScaleAnalytics(RuntimeObject runtimeObject) {
+    List<ViewTable> viewTables = new ArrayList<ViewTable>();
+    ViewQueryBuilder vQB = new ViewQueryBuilder();
 
-    try (FileOutputStream fileOutputStream = new FileOutputStream(file);
-        BufferedOutputStream writer = new BufferedOutputStream(fileOutputStream)) {
+    vQB.insertCriteria("Scale", runtimeObject.scaleRequest);
+    ViewQuery viewQuery = vQB.compileViewQuery();
 
-      for (OutputForm view : views) {
-        byte[] buffer = view.getByteArray();
-        writer.write(buffer, 0, buffer.length);
-      }
-    }
-    catch (IOException iOE) {
-      iOE.printStackTrace();
-    }
+    viewTables.add(this.getRomanNumeralAnalytic(viewQuery));
+    viewTables.add(this.getIntervalAnalytic(viewQuery));
+    viewTables.add(this.getStepPatternAnalytic(viewQuery));
+
+    return viewTables;
   }
 
   private List<OutputForm> renderAnalytics(List<ViewTable> modelsRendered,
@@ -142,6 +200,23 @@ public class MainController {
     }
 
     return analytics;
+  }
+
+  private void createOutput(RuntimeObject runtimeObject, List<OutputForm> views) {
+    String outputFileName = runtimeObject.outputFileName;
+
+    if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
+      this.writeOutputToStdOut(views);
+    }
+    else {
+      this.writeOutputToFile(runtimeObject, views);
+    }
+  }
+
+  private ViewTable getParallelModeAnalyticFactory(ViewQuery viewQuery) {
+    ViewFactory viewFactory = new ParallelModeAnalyticViewFactory();
+
+    return viewFactory.createView(viewQuery);
   }
 
   private Scale parseAndRenderScale(String keyRequest, String scaleRequest) {
@@ -176,16 +251,29 @@ public class MainController {
     return viewFactory.createView(viewQuery);
   }
 
-  private ViewTable getParallelModeAnalyticFactory(ViewQuery viewQuery) {
-    ViewFactory viewFactory = new ParallelModeAnalyticViewFactory();
-
-    return viewFactory.createView(viewQuery);
+  private void writeOutputToStdOut(List<OutputForm> views) {
+    for (OutputForm view : views) {
+      System.out.println(view.toString());
+    }
   }
 
-  private OutputFormFactory selectCreateOutputFormFactory(Arguments arguments) {
-    OutputFormat outputFormat =
-        OutputFormat.getOutputFormat(arguments.getFormatRequest().trim().toUpperCase());
+  private void writeOutputToFile(RuntimeObject runtimeObject, List<OutputForm> views) {
+    File file = new File(runtimeObject.outputFileName);
 
+    try (FileOutputStream fileOutputStream = new FileOutputStream(file);
+        BufferedOutputStream writer = new BufferedOutputStream(fileOutputStream)) {
+
+      for (OutputForm view : views) {
+        byte[] buffer = view.getByteArray();
+        writer.write(buffer, 0, buffer.length);
+      }
+    }
+    catch (IOException iOE) {
+      iOE.printStackTrace();
+    }
+  }
+
+  private OutputFormFactory selectCreateOutputFormFactory(OutputFormat outputFormat) {
     switch (outputFormat) {
       case CSV:
         return new CSVOutputFormFactory();
@@ -196,15 +284,12 @@ public class MainController {
     }
   }
 
-  private void createOutput(Arguments arguments, List<OutputForm> views) {
-    String outputFileName = arguments.getOutputFileName();
-
-    if ((outputFileName == null) || (outputFileName.trim().equals(""))) {
-      this.writeOutputToStdOut(views);
-    }
-    else {
-      this.writeOutputToFile(arguments, views);
-    }
+  class RuntimeObject {
+    String typeRequest = null;
+    Tone keyRequest = null;
+    Scale scaleRequest = null;
+    OutputFormat formatRequest = null;
+    String outputFileName = null;
   }
 
   enum Branch {
@@ -226,5 +311,4 @@ public class MainController {
       return text;
     }
   }
-
 }

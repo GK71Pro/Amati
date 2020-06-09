@@ -4,8 +4,8 @@ import com.beust.jcommander.Parameter;
 
 public class Arguments {
   @Parameter(names = {"--type", "-t"})
-  private String requestType;
-  
+  private String typeRequest;
+
   @Parameter(names = {"--key", "-k"})
   private String keyRequest;
 
@@ -18,10 +18,10 @@ public class Arguments {
   @Parameter(names = {"--output", "-o"})
   private String outputFileName;
 
-  public String getRequestType() {
-    return requestType;
+  public String getTypeRequest() {
+    return typeRequest;
   }
-  
+
   public String getKeyRequest() {
     return keyRequest;
   }

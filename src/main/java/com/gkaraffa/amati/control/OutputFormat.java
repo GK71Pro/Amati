@@ -28,7 +28,8 @@ public enum OutputFormat {
     return this.formatTexts;
   }
 
-  public static final OutputFormat getOutputFormat(String inputText) {
+  public static final OutputFormat getOutputFormat(String inputText)
+      throws IllegalArgumentException {
     String analysisText = inputText.trim().toUpperCase();
 
     OutputFormat outputFormat = hashMap.get(analysisText);

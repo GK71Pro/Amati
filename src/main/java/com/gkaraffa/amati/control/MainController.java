@@ -36,10 +36,10 @@ public class MainController {
 
   public void run(Arguments arguments) {
     try {
-      String typeRequest = this.parseAndValidateType(arguments.getTypeRequest());
-      String formatRequest = this.parseAndValidateFormat(arguments.getFormatRequest());
+      String typeRequest = this.trimAndValidateType(arguments.getTypeRequest());
+      String formatRequest = this.trimAndValidateFormat(arguments.getFormatRequest());
 
-      OutputFormFactory viewFactory = this.selectCreateOutputFormFactory(formatRequest);
+      OutputFormFactory viewFactory = this.selectAndCreateOuputFormFactory(formatRequest);
       List<ViewTable> viewTables = null;
 
       switch (typeRequest) {
@@ -50,8 +50,10 @@ public class MainController {
           viewTables = this.parseAndRenderScaleAnalytics(arguments.getKeyRequest(),
               arguments.getScaleRequest());
           break;
+        /*
         case "GUITAR":
           break;
+        */
         default:
           throw new IllegalArgumentException();
       }
@@ -65,7 +67,7 @@ public class MainController {
     }
   }
 
-  private String parseAndValidateType(String typeRequest) throws IllegalArgumentException {
+  private String trimAndValidateType(String typeRequest) throws IllegalArgumentException {
     if (typeRequest == null) {
       throw new IllegalArgumentException("Run type not specified.");
     }
@@ -78,7 +80,7 @@ public class MainController {
     return typeRequest;
   }
 
-  private String parseAndValidateFormat(String formatString) throws IllegalArgumentException {
+  private String trimAndValidateFormat(String formatString) throws IllegalArgumentException {
     if (formatString == null) {
       throw new IllegalArgumentException("Format not specified.");
     }
@@ -91,7 +93,7 @@ public class MainController {
     return formatString;
   }
 
-  private OutputFormFactory selectCreateOutputFormFactory(String outputFormat) {
+  private OutputFormFactory selectAndCreateOuputFormFactory(String outputFormat) {
     switch (outputFormat) {
       case "CSV":
         return new CSVOutputFormFactory();

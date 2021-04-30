@@ -23,11 +23,6 @@
 				</configuration>
 			</plugin>
 
-			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-jar-plugin</artifactId> 
-				<version>3.0.2</version> <configuration> <archive> <manifest> <addClasspath>true</addClasspath> 
-				<classpathPrefix>lib/</classpathPrefix> <mainClass>com.gkaraffa.amati.MainController</mainClass> 
-				</manifest> </archive> </configuration> </plugin> -->
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
@@ -35,7 +30,6 @@
 				<configuration>
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
-						<!--<descriptorRef>bin</descriptorRef> -->
 					</descriptorRefs>
 					<archive>
 						<manifest>
@@ -66,12 +60,12 @@
 		<dependency>
 			<groupId>com.gkaraffa</groupId>
 			<artifactId>cremona</artifactId>
-			<version>1.0.2</version>
+			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.gkaraffa</groupId>
 			<artifactId>guarneri</artifactId>
-			<version>1.1.1</version>
+			<version>1.2.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.beust</groupId>

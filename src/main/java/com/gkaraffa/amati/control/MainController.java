@@ -36,14 +36,14 @@ public class MainController {
 
   public void run(Arguments arguments) {
     try {
-      boolean helpRequest = arguments.getHelpRequest();      
+      boolean helpRequest = arguments.getHelpRequest();
       if (helpRequest) {
         displayHelp();
         return;
       }
-      
+
       String typeRequest = this.trimAndValidateType(arguments.getTypeRequest());
-      String formatRequest = this.trimAndValidateFormat(arguments.getFormatRequest());      
+      String formatRequest = this.trimAndValidateFormat(arguments.getFormatRequest());
       OutputFormFactory viewFactory = this.selectAndCreateOuputFormFactory(formatRequest);
       List<ViewTable> viewTables = null;
 
@@ -72,33 +72,16 @@ public class MainController {
     }
   }
 
-/*  
-  private boolean trimAndValidateHelp(boolean helpRequest) throws IllegalArgumentException {
-    return helpRequest.trim().toUpperCase();
-    if (typeRequest == null) {
-      throw new IllegalArgumentException("Run type not specified.");
-    }
-
-    typeRequest = typeRequest.trim().toUpperCase();
-    if (!(typeRequest.equals("KEY") || typeRequest.equals("SCALE"))) {
-      throw new IllegalArgumentException("Unexpected run type.");
-    }
-
-    return typeRequest;
-  }
-*/
-  
   private void displayHelp() {
-    String helpText = "Amati - a command line music theory tool\n" +
-        "Build: \n\n" +
-        "--help, -h \t help/options screen \n" +
-        "--type, -t \t analytic type {key, scale} \n" +
-        "--format, -f \t output format {txt, csv} \n" +
-        "--key, -k \t key (required for key or scale analytic) \n" + 
-        "--scale, -s \t scale (required for scale analytic) \n" +
-        "--output, -o \t output file path/filename" +
-        "";
-    
+    String helpText = "Amati - a command line music theory tool\n" 
+        + "Build: \n\n"
+        + "--help, -h \t help/options screen \n" 
+        + "--type, -t \t analytic type {key, scale} \n"
+        + "--format, -f \t output format {txt, csv} \n"
+        + "--key, -k \t key (required for key or scale analytic) \n"
+        + "--scale, -s \t scale (required for scale analytic) \n"
+        + "--output, -o \t output file path/filename" + "";
+
     System.out.println(helpText);
   }
 
@@ -121,7 +104,8 @@ public class MainController {
     }
 
     formatString = formatString.trim().toUpperCase();
-    if (!(formatString.contentEquals("TEXT")) && !(formatString.contentEquals("TXT")) && !(formatString.contentEquals("CSV"))) {
+    if (!(formatString.contentEquals("TEXT")) && !(formatString.contentEquals("TXT"))
+        && !(formatString.contentEquals("CSV"))) {
       throw new IllegalArgumentException("Unexpected format.");
     }
 

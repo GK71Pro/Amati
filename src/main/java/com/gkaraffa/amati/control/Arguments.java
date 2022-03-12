@@ -10,10 +10,13 @@ public class Arguments {
   private String typeRequest;
 
   @Parameter(names = {"--key", "-k"})
-  private String keyRequest;
+  private String keyRequest = "null";
 
   @Parameter(names = {"--scale", "-s"})
-  private String scaleRequest;
+  private String scaleRequest = "null";
+
+  @Parameter(names = {"--chord", "-c"})
+  private String chordRequest = "null";
 
   @Parameter(names = {"--format", "-f"})
   private String formatRequest = "text";
@@ -35,6 +38,10 @@ public class Arguments {
 
   public String getScaleRequest() {
     return scaleRequest;
+  }
+
+  public String getChordRequest() {
+    return chordRequest;
   }
 
   public String getFormatRequest() {

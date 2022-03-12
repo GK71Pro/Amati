@@ -9,7 +9,7 @@ public enum OutputFormat {
   XLSX(new String[] {"XLSX"});
 
   private final String[] formatTexts;
-  private final static HashMap<String, OutputFormat> hashMap = new HashMap<String, OutputFormat>();
+  private final static HashMap<String, OutputFormat> hashMap = new HashMap<>();
 
   static {
     for (OutputFormat outputFormat : OutputFormat.values()) {

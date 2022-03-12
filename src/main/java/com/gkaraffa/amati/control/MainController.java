@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.beust.jcommander.JCommander;
+import com.gkaraffa.cremona.helper.ChordHelper;
 import com.gkaraffa.cremona.helper.ScaleHelper;
 import com.gkaraffa.cremona.theoretical.Tone;
+import com.gkaraffa.cremona.theoretical.chord.Chord;
 import com.gkaraffa.cremona.theoretical.scale.DiatonicScale;
 import com.gkaraffa.cremona.theoretical.scale.Scale;
 import com.gkaraffa.guarneri.outputform.CSVOutputFormFactory;
@@ -24,6 +26,7 @@ import com.gkaraffa.guarneri.view.analytic.key.ParallelModeAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.IntervalAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.RomanNumeralAnalyticViewFactory;
 import com.gkaraffa.guarneri.view.analytic.scale.StepPatternAnalyticFactory;
+import com.gkaraffa.guarneri.view.instrument.GuitarViewFactory;
 
 public class MainController {
 
@@ -55,10 +58,10 @@ public class MainController {
           viewTables = this.parseAndRenderScaleAnalytics(arguments.getKeyRequest(),
               arguments.getScaleRequest());
           break;
-        /*
         case "GUITAR":
+          viewTables = this.parseAndRenderGuitarAnalytic(arguments.getKeyRequest(),
+              arguments.getScaleRequest(), arguments.getChordRequest());
           break;
-        */
         default:
           throw new IllegalArgumentException();
       }
@@ -73,13 +76,12 @@ public class MainController {
   }
 
   private void displayHelp() {
-    String helpText = "Amati - a command line music theory tool\n" 
-        + "Build: \n\n"
-        + "--help, -h \t help/options screen \n" 
-        + "--type, -t \t analytic type {key, scale} \n"
+    String helpText = "Amati - a command line music theory tool\n" + "Build: \n\n"
+        + "--help, -h \t help/options screen \n" + "--type, -t \t analytic type {key, scale} \n"
         + "--format, -f \t output format {txt, csv} \n"
-        + "--key, -k \t key (required for key or scale analytic) \n"
-        + "--scale, -s \t scale (required for scale analytic) \n"
+        + "--key, -k \t key (required for key, scale, or guitar analytic) \n"
+        + "--scale, -s \t scale (required for scale, or guitar analytic) \n"
+        + "--chord, -c \t chord (for guitar analytic only)"
         + "--output, -o \t output file path/filename" + "";
 
     System.out.println(helpText);
@@ -91,7 +93,8 @@ public class MainController {
     }
 
     typeRequest = typeRequest.trim().toUpperCase();
-    if (!(typeRequest.equals("KEY") || typeRequest.equals("SCALE"))) {
+    if (!(typeRequest.equals("KEY") || typeRequest.equals("SCALE")
+        || typeRequest.equals("GUITAR"))) {
       throw new IllegalArgumentException("Unexpected run type.");
     }
 
@@ -125,7 +128,7 @@ public class MainController {
 
   private List<ViewTable> parseAndRenderKeyAnalytics(String keyString)
       throws IllegalArgumentException {
-    List<ViewTable> viewTables = new ArrayList<ViewTable>();
+    List<ViewTable> viewTables = new ArrayList<>();
     ViewQueryBuilder vQB = new ViewQueryBuilder();
 
     vQB.insertCriteria("Key", this.parseAndValidateKey(keyString));
@@ -136,7 +139,7 @@ public class MainController {
   }
 
   private List<ViewTable> parseAndRenderScaleAnalytics(String keyString, String scaleString) {
-    List<ViewTable> viewTables = new ArrayList<ViewTable>();
+    List<ViewTable> viewTables = new ArrayList<>();
     ViewQueryBuilder vQB = new ViewQueryBuilder();
     Scale scale = this.parseAndValidateScale(keyString, scaleString);
 
@@ -146,6 +149,55 @@ public class MainController {
     viewTables.add(this.getRomanNumeralAnalytic(viewQuery));
     viewTables.add(this.getIntervalAnalytic(viewQuery));
     viewTables.add(this.getStepPatternAnalytic(viewQuery));
+
+    return viewTables;
+  }
+
+  private String getQueryType(String keyString, String scaleString, String chordString)
+      throws IllegalArgumentException {
+
+    if (keyString.equals("null")) {
+      throw new IllegalArgumentException("Key must be specified for Guitar analytic.");
+    }
+
+    String secondSpec = scaleString + chordString;
+    if (secondSpec.equals("nullnull") || !secondSpec.contains("null")) {
+      throw new IllegalArgumentException(
+          "Either a scale, or a chord must be specified for a Guitar analytic.");
+    }
+
+    if (!scaleString.contains("null")) {
+      return "SCALE";
+    }
+
+    if (!chordString.contains("null")) {
+      return "CHORD";
+    }
+
+    throw new IllegalArgumentException("Invalid arguments for Guitar analytic.");
+  }
+
+  private List<ViewTable> parseAndRenderGuitarAnalytic(String keyString, String scaleString,
+      String chordString) throws IllegalArgumentException {
+    String queryType = getQueryType(keyString, scaleString, chordString);
+    ViewQueryBuilder vQB = new ViewQueryBuilder();
+    ViewQuery viewQuery = null;
+
+    switch (queryType) {
+      case "CHORD":
+        Chord chord = this.parseAndValidateChord(keyString, chordString);
+        vQB.insertCriteria("ToneGroupObject", chord);
+        break;
+      case "SCALE":
+        Scale scale = this.parseAndValidateScale(keyString, scaleString);
+        vQB.insertCriteria("ToneGroupObject", scale);
+        break;
+    }
+
+    viewQuery = vQB.compileViewQuery();
+
+    List<ViewTable> viewTables = new ArrayList<>();
+    viewTables.add(this.getGuitarAnalytic(viewQuery));
 
     return viewTables;
   }
@@ -171,6 +223,17 @@ public class MainController {
     return scale;
   }
 
+  private Chord parseAndValidateChord(String keyString, String chordString)
+      throws IllegalArgumentException {
+    if (chordString == null) {
+      throw new IllegalArgumentException("Chord not specified.");
+    }
+
+    Chord chord = this.parseAndRenderChord(keyString, chordString);
+
+    return chord;
+  }
+
   private Scale parseAndRenderScale(String keyRequest, String scaleRequest) {
     ScaleHelper helper = ScaleHelper.getInstance();
     Scale scaleRendered = helper.getScale(keyRequest, scaleRequest);
@@ -178,9 +241,16 @@ public class MainController {
     return scaleRendered;
   }
 
+  private Chord parseAndRenderChord(String keyRequest, String chordRequest) {
+    ChordHelper helper = ChordHelper.getInstance();
+    Chord chordRendered = helper.getChord(keyRequest, chordRequest);
+
+    return chordRendered;
+  }
+
   private List<OutputForm> renderAnalytics(List<ViewTable> modelsRendered,
       OutputFormFactory viewFactory) {
-    List<OutputForm> analytics = new ArrayList<OutputForm>();
+    List<OutputForm> analytics = new ArrayList<>();
 
     for (ViewTable modelTable : modelsRendered) {
       analytics.add(viewFactory.renderView(modelTable));
@@ -214,6 +284,11 @@ public class MainController {
     else {
       throw new IllegalArgumentException("IntervalAnalytic view cannot be rendered for this scale");
     }
+  }
+
+  private ViewTable getGuitarAnalytic(ViewQuery viewQuery) throws IllegalArgumentException {
+    ViewFactory viewFactory = new GuitarViewFactory();
+    return viewFactory.createView(viewQuery);
   }
 
   private ViewTable getStepPatternAnalytic(ViewQuery viewQuery) {

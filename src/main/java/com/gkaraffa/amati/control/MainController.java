@@ -192,6 +192,8 @@ public class MainController {
         Scale scale = this.parseAndValidateScale(keyString, scaleString);
         vQB.insertCriteria("ToneGroupObject", scale);
         break;
+      default:
+        throw new IllegalArgumentException("No query parameters specified");
     }
 
     viewQuery = vQB.compileViewQuery();
@@ -326,4 +328,5 @@ public class MainController {
       iOE.printStackTrace();
     }
   }
+  
 }
